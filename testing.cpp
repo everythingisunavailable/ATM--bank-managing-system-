@@ -3,38 +3,27 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <limits> 
 using namespace std;
 
-
-
-/*
-    ATM
-    -account nr and password(4 digit pin) to login
-    -personal menu (welkome John Doe heres what u can do 1 2 3 4 5)
-        -check balance
-        -withdraw
-        -deposit
-        -transfer to another acc
-        -exit
-    -create an account (0 money at first)
-        
-*/
 class BankAccount{
     private:
     string name;
     string accNumber;
     int PIN;
-    double balance;
+    int balance;
     public:
     BankAccount(){
         name = "undefined";
-        accNumber = "AL00000000000000000000000000";
+        accNumber = "AL00000000";
         PIN = 0000;
+        balance = 0;
     }
-    BankAccount(string name, string AccNumber, int PIN){
+    BankAccount(string name, string AccNumber, int PIN, int balance){
         this->name = name;
         this->accNumber = accNumber;
         this->PIN = PIN;
+        this->balance = balance;
     }
     string getName(){
         return name;
@@ -57,19 +46,19 @@ class BankAccount{
         this->PIN = PIN;
     }   
     
-    double getBalance (){
+    int getBalance (){
         return balance;
     }
-    void setBalance( double balance){
+    void setBalance( int balance){
         this->balance = balance;
     }
 
     void withdraw(int amount){
         if (amount > balance || amount < 0){
-            cout << "Insufficient founds !"<<"\n";
+            cout << "Insufficient funds !"<<"\n";
             return;
         }
-        balance =- amount;
+        this->balance = this->balance - amount;
         cout << "Withdrawl successfull !"<<"\n";
 
     }
@@ -78,7 +67,7 @@ class BankAccount{
             cout << "Not stealing from the bankkk !"<<"\n";
             return;
         }
-        balance =+  amount;
+        this->balance = this->balance + amount;
         cout << "Deposit successfull !"<<"\n"; 
                
     }
@@ -128,24 +117,23 @@ class Bank{
                 newAcc.setName(vectorData.at(0));
                 newAcc.setAccNumber(vectorData.at(1));
                 newAcc.setPIN(stoi(vectorData.at(2)));
-                newAcc.setBalance(stod(vectorData.at(3)));
+                newAcc.setBalance(stoi(vectorData.at(3)));
                 accounts.push_back(newAcc);
             }
-        }
-    }
+        }    }
     void updateFile(){
-             ofstream file("input.txt");
+        ofstream file("input.txt");
         if(!file.is_open()){
             cout << "Couldn't write to file" << "\n";
         }
         else{
             for (int i = 0; i < accounts.size(); i++){
-                file << accounts.at(i).toString() + "\n";
+                file << accounts.at(i).toString() << "\n";
             } 
         }
+        file.close();
     }
-
-    void createAccount(string name, string accNumber, int PIN, double balance){
+    void createAccount(string name, string accNumber, int PIN, int balance){
         BankAccount newAcc;
         newAcc.setName(name);
         newAcc.setAccNumber(accNumber);
@@ -154,16 +142,32 @@ class Bank{
         accounts.push_back(newAcc);
         updateFile();
     }
+
+    void transfer(BankAccount from, BankAccount to, int amount){
+        if(from.getBalance() < amount){
+            return;
+            cout << "Insufficient founds !"<<"\n";
+        };
+        from.withdraw(amount);
+        to.deposit(amount);
+        updateFile();
+        cout << "Transfer successfull !"<< "\n";
+    }
+
 };
 
 
 
+void login(Bank bank);
+void enterAccount(Bank bank, int accountIndex);
 
 int main(){
     bool endBankLoop = false;
     while (!endBankLoop){
     
         Bank bank;
+        bank.getAccounts().at(0).withdraw(300);
+        cout << bank.getAccounts().at(0).getBalance();
         cout <<"           _______ ___ _______ _______ _______ __    _ ___   _            "<<"\n";
         cout <<"          |       |   |       |  _    |   _   |  |  | |   | | |           "<<"\n";
         cout <<" ____ ____|    ___|   |_     _| |_|   |  |_|  |   |_| |   |_| |____ ____  "<<"\n";
@@ -192,9 +196,11 @@ int main(){
         }
         else{
             cout << "This input is incorrect. Please try again! "<< "\n";
+            cin.clear(); // clear the error state
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
         }
-    return 0;
     }
+    return 0;
 }
 
 void login(Bank bank){
@@ -222,7 +228,9 @@ void login(Bank bank){
                         if(!cin.fail()){
                             if (bank.getAccounts().at(accountIndex).getPIN() == pin){
                                 //redirect to account
-                                
+                                enterAccount(bank, accountIndex);
+                                endLoginLoop = true;
+                                passCounter = 0;
                             }
                             else{
                                 passCounter--;
@@ -233,7 +241,7 @@ void login(Bank bank){
                             passCounter--;
                             cout << "This input is incorrect. Please try again! "<< "\n";
                         }
-                    }              
+                    }             
                 }
                 else{
                     cout << "This account does not exist !. Please try again !"<< "\n";
@@ -244,14 +252,18 @@ void login(Bank bank){
         }
         else{
             cout << "This IBAN is incorrect. Please try again !"<< "\n";
+            cin.clear(); // clear the error state
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
         }
     }
         
 }
 
-void enterAccount (Bank bank, BankAccount currAcc){
+void enterAccount (Bank bank, int accountIndex){
     bool endEnteredAccLoop = false;
     while (!endEnteredAccLoop){
+        bool endTransferLoop = false;
+
         
         cout <<"           _______ ___ _______ _______ _______ __    _ ___   _            "<<"\n";
         cout <<"          |       |   |       |  _    |   _   |  |  | |   | | |           "<<"\n";
@@ -264,7 +276,7 @@ void enterAccount (Bank bank, BankAccount currAcc){
         cout << "                       ┬ ┬┌─┐┬  ┌─┐┌─┐┌┬┐┌─┐"<<"\n";
         cout << "-----------------------│││├┤ │  │  │ ││││├┤ ------------------------------"<<"\n";
         cout << "                       └┴┘└─┘┴─┘└─┘└─┘┴ ┴└─┘"<<"\n";
-        cout << "                        "<<currAcc.getName() <<"\n";
+        cout << "                             "<<bank.getAccounts().at(accountIndex).getName() <<"\n";
         cout << "              --------------               ------------"<< "\n";
         cout << "              | 1.Withdraw |               | 2.Deposit|" << "\n";
         cout << "              --------------               ------------"<< "\n";
@@ -279,49 +291,91 @@ void enterAccount (Bank bank, BankAccount currAcc){
         cin >> input;
         if (!cin.fail()){
             switch (input){
-            case  1:
+            case  1:{
                 cout << "--------------------------------------------------------------------------"<<"\n";
                 cout << "Please enter amount to withdraw : "<< "\n";
                 cout << "--------------------------------------------------------------------------"<<"\n";
                 int amount;
                 cin >> amount;
                 if(!cin.fail()){
-                    currAcc.withdraw(amount);
+                    bank.getAccounts().at(accountIndex).withdraw(amount);
                     bank.updateFile();
                 }
                 else{
                     cout << "This input is incorrect. Please try again !"<< "\n";
+                    cin.clear(); // clear the error state
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 }
                 break;
-            case  2:
+                }
+            case  2:{
                 cout << "--------------------------------------------------------------------------"<<"\n";
                 cout << "Please enter amount to deposit : "<< "\n";
                 cout << "--------------------------------------------------------------------------"<<"\n";
-                int amount;
-                cin >> amount;
+                int amountDeposit;
+                cin >> amountDeposit;
                 if(!cin.fail()){
-                    currAcc.deposit(amount);
+                    bank.getAccounts().at(accountIndex).deposit(amountDeposit);
                     bank.updateFile();
                 }
                 else{
                     cout << "This input is incorrect. Please try again !"<< "\n";
+                    cin.clear(); // clear the error state
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
                 }
                 break;
-            case  3:
+                }
+            case  3:{
                 cout << "--------------------------------------------------------------------------"<<"\n";
-                cout << "Current Balance : "<< currAcc.getBalance()  << " ALL\n";
+                cout << "Current Balance : "<< bank.getAccounts().at(accountIndex).getBalance()  << " ALL\n";
                 cout << "--------------------------------------------------------------------------"<<"\n";
                 break;
-            case  4:
+                }
+            case  4:{
+                while (!endTransferLoop){
+                    cout << "--------------------------------------------------------------------------"<<"\n";
+                    cout << "Please enter the IBAN of the reciver :          or            type (exit) to exit "<< "\n";
+                    cout << "--------------------------------------------------------------------------"<<"\n";
+                    string inputIBAN;
+                    cin >> inputIBAN;
+                    if (!cin.fail()){
+                        if( inputIBAN == "exit"){
+                            endTransferLoop = true;
+                        }
+                        else{
+                            int accountIndex = bank.findAccount(inputIBAN);
+                            if (accountIndex != -1){
+                                endTransferLoop = true;
+                                cout << "--------------------------------------------------------------------------"<<"\n";
+                                cout << "Please enter the amount to transfer : "<< "\n";
+                                cout << "--------------------------------------------------------------------------"<<"\n";
+                                int amount;
+                                cin >> amount;
+                                bank.transfer(bank.getAccounts().at(accountIndex), bank.getAccounts().at(accountIndex), amount);
+                            }
+                            else{
+                                cout << "This account does not exist !. Please try again !"<< "\n";
+                            }
+                        }
+                    }
+                    else{
+                        cout << "This input is incorrect. Please try again !"<< "\n";
+                        cin.clear(); // clear the error state
+                        cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
+                    }
+                }
                 break;
-            case  5:
-                break;                                                        
-            default:
+                }
+            case  5:{
+                endEnteredAccLoop = true;
                 break;
-            }
+                }
+            }                                                       
         }
         else{
             cout << "This input is incorrect. Please trye again !" << "\n";
+            cin.clear(); // clear the error state
+            cin.ignore(numeric_limits<streamsize>::max(), '\n'); 
         }
         
     }
