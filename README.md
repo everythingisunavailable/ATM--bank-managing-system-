@@ -11,6 +11,5 @@
 
 
 ### Dummy accounts (name IBAN PIN balance) :
-- frenkiqose AL11111111 1234 980
 - johndoe AL12121212 1212 500
 - loremipsum AL00000000 1000 0
