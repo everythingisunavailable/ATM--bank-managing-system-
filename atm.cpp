@@ -251,12 +251,10 @@ void newAccount(Bank& bank){
                                     cout << name << " \n";
                                     while (sname >> tmp){
                                         nameWithSpaces.push_back(tmp);
-                                        cout << "Entered while " <<  " ";
                                     }
                                     string newName;
                                     for (int i = 0; i < nameWithSpaces.size(); i++){
                                         newName.append(nameWithSpaces.at(i));
-                                        cout << " Entered for  ";
                                     }
                                     
                                     bank.createAccount(newName, newIban, pin, 0);
